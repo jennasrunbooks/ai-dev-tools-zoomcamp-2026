@@ -1,0 +1,5 @@
+Read the frontend's API client in frontend/
+
+Create openapi.yaml at the repository root.
+
+Specify the backend this frontend expects: every endpoint, method, path, request body, response body, and which endpoints need authentication.
