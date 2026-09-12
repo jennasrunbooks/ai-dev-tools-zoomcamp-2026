@@ -1,42 +1,36 @@
-## Question 0: Pick your project
+## Question 1: Pick your project
 
 Which project did you choose for this homework?
 
 > 💡 **Answer:** Restaurant waitlist manager
 
-## Question 1: Spec first
+## Question 2: Spec first
 
 Open a chat assistant and ask it to help you come up with the specification.
 
 Also ask it to help you come up with the name for this application. What's the name you chose?
 
-> 💡 **Answer:**
+> 💡 **Answer:** WaitFlow
 
-## Question 2: GitHub Repository
+## Question 3: GitHub Repository
 
 Create a new GitHub repository (or a folder in the repository you used for Homework 1), clone it locally. Put the spec there.
 
 Commit and push. What's the sha1 hash for this commit?
 
-> 💡 **Answer:**
+> 💡 **Answer:** 6137937ef908a35858ce1f89cf8a6850619aa251
 
-## Question 3: Frontend prototype
+## Question 4: Frontend prototype
 
-Build a frontend prototype with a mocked backend. To make it simpler, use your coding agent directly, not Lovable (but you can experiment with it too).
+Build a frontend prototype with a mocked backend. 
 
 Implement the frontend for the app described in _docs/specs.md. Put it in frontent/.
-
-Don't implement the backend yet. Centralize all the backend calls
-in one place and mock them for now.
-
-Make the UI interactive so I can use the main features from the spec.
-Iterate until you like the results.
 
 Which command do you use to start the frontend?
 
 > 💡 **Answer:**
 
-## Question 4: Backend
+## Question 5: Backend
 
 Now let's create the backend. You can first ask your coding assistant to analyze the frontend code and create the specs, and then based on specs create the backend. Or you can create backend directly.
 
@@ -51,7 +45,7 @@ Which command do you use to start the backend?
 
 > 💡 **Answer:**
 
-## Question 5: Connect frontend and backend
+## Question 6: Connect frontend and backend
 
 The backend now works (presumably) so let's connect frontent to it. Ask the coding assistant to do it.
 
@@ -61,7 +55,7 @@ Which URL does the frontend use to talk to the backend?
 
 > 💡 **Answer:**
 
-## Question 6: Database
+## Question 7: Database
 
 Now the backend and frontend work fine, you can swap the mock store for a real database.
 
