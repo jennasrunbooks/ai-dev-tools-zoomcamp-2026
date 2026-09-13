@@ -24,11 +24,11 @@ Commit and push. What's the sha1 hash for this commit?
 
 Build a frontend prototype with a mocked backend. 
 
-Implement the frontend for the app described in _docs/specs.md. Put it in frontent/.
+Implement the frontend for the app described in _docs/specs.md. Put it in frontend/.
 
 Which command do you use to start the frontend?
 
-> 💡 **Answer:**
+> 💡 **Answer:** cd 02-development/src/frontend && npm install && npm run dev
 
 ## Question 5: Backend
 

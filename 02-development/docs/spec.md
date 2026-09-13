@@ -66,14 +66,17 @@
 
 ```
 waiting ──► notified ──► seated
-   │            │
-   │            └──► no_show
+   │            │           ▲
+   │            └──► no_show│
+   │                        │
+   ├───────────────────────►┘
    │
    └──► cancelled
 ```
 
 **Allowed transitions:**
 - `waiting → notified`
+- `waiting → seated` (walked straight to a table, e.g. no separate notify step was needed)
 - `waiting → cancelled`
 - `notified → seated`
 - `notified → no_show`
