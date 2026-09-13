@@ -250,6 +250,15 @@ frontend/
 - UI is built/iterated against the mock client first, enabling frontend work to proceed independent of backend completion.
 - A single env-driven switch (e.g. `VITE_USE_MOCK`) toggles between mock and real client.
 
+**Implemented as:** `src/api/waitlistApi.ts` is a thin switch between
+`httpWaitlistApi.ts` (real, default) and `mockWaitlistApi.ts` (the original
+fixture store), selected by `VITE_USE_MOCK` (defaults to real). The real
+client's base URL is `VITE_API_BASE_URL`, defaulting to
+`http://localhost:8000` with no env file required — override either via a
+local, gitignored `.env.development` if needed. The backend must be running
+separately (`cd src/backend && uv run uvicorn app.main:app --reload --host
+0.0.0.0 --port 8000`) before `npm run dev`.
+
 ### 6.3 Core UI Views
 
 - **Queue view:** live-sorted list per priority-queue rules, with status badges and SLA breach flags.
