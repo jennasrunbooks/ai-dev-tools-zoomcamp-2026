@@ -3,6 +3,12 @@
 React + TypeScript + Vite frontend for the WaitFlow restaurant waitlist manager,
 talking to the FastAPI backend in `../backend` per `../../docs/spec.md`.
 
+## 📸 Application Preview
+
+![WaitFlow restaurant waitlist manager UI](../../docs/screenshot.png)
+
+---
+
 ## Run it
 
 Start the backend first (see `../backend/README.md`), then:

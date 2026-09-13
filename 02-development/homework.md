@@ -65,4 +65,4 @@ Make sure test still pass and add more tests if needed. Ask your agent for recom
 
 Which command do you use for running tests?
 
-> 💡 **Answer:**
+> 💡 **Answer:** `cd 02-development/src/backend && uv run pytest`

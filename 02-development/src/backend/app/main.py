@@ -4,14 +4,17 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app import crud
+from app.db import SessionLocal, init_db
 from app.errors import ApiException
 from app.routers import waitlist
-from app.store import store
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    store.seed_demo_data()
+    init_db()
+    with SessionLocal() as session:
+        crud.seed_demo_data(session)
     yield
 
 
