@@ -151,6 +151,14 @@ backend/
 └── openapi.yaml                # exported/checked against app schema
 ```
 
+**Implemented as above**, plus `app/errors.py` (the `{code, message}` API
+error shape, 5.4) and `tests/test_database.py` (persistence-specific tests,
+5.2). The store started as an in-memory mock (5.4) and has since been
+swapped for SQLAlchemy + SQLite per this section — `app/store.py` no longer
+exists; routers depend on a per-request `Session` (`app/db.py`'s `get_db`)
+and call `app/crud.py` functions, which is the only layer that touches ORM
+models directly.
+
 ### 5.2 Dev Workflow
 
 - `uv init`, `uv add fastapi sqlalchemy uvicorn pytest httpx`
@@ -159,6 +167,16 @@ backend/
   Codespaces port forwarding)
 - `uv run pytest` for test suite
 - Database engine configured to be swappable (SQLite for dev/test, Postgres-ready via SQLAlchemy dialect) — no SQLite-specific SQL in app code.
+- **`DATABASE_URL` env var** selects the database (default
+  `sqlite:///./waitflow.db`, a file next to wherever uvicorn is run from —
+  gitignored). Point it at a Postgres URL (`postgresql://...`) to swap
+  dialects; nothing else in the app needs to change. Tests never touch this
+  file — they override the DB dependency with an isolated in-memory SQLite
+  database per test (`tests/conftest.py`).
+- One caveat SQLite introduces that a real Postgres deployment won't:
+  `DateTime(timezone=True)` round-trips as offset-naive on SQLite, so
+  `app/models.py` wraps it in a small `UTCDateTime` type that reattaches UTC
+  on read — keeps SLA-breach comparisons correct on both dialects.
 
 ### 5.3 Test-Driven Backend Generation
 
@@ -209,13 +227,11 @@ details the OpenAPI shape alone doesn't fully pin down:
 - **CORS:** the backend must allow the Vite dev origin
   (`http://localhost:5173`) for local development, since frontend and backend
   run as separate dev servers.
-- **Mock database:** an in-memory store (list/dict, process-lifetime only) is
-  sufficient for this phase, per homework instructions — no persistence
-  required yet. Keep the storage layer behind a narrow interface (per
-  `5.1`'s `crud.py`) so it can be swapped for SQLAlchemy/SQLite later without
-  touching route handlers. Every stored row carries `restaurant_id`
-  (default `"default"`, per `9.1`) even though it's not yet exposed in
-  response schemas.
+- **Database:** now SQLAlchemy + SQLite (originally an in-memory mock store
+  for the first backend pass, per homework instructions — since swapped per
+  `5.1`/`5.2`). Every stored row carries `restaurant_id` (default
+  `"default"`, per `9.1`) even though it's not yet exposed in response
+  schemas.
 - **Notification simulation:** transitioning to `notified` logs a simulated
   notification (structured log line) per `9.2`; no request/response shape
   changes as a result — this is a side effect, not part of the contract.

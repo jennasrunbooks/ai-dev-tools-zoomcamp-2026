@@ -2,8 +2,8 @@
 
 FastAPI backend for the WaitFlow restaurant waitlist manager, implementing
 the contract in `../../openapi.yaml` (see `../../docs/spec.md` for the full
-domain model). Currently backed by an in-memory mock store — see
-`app/store.py` — to be swapped for SQLAlchemy/SQLite later.
+domain model). Persistence is SQLAlchemy + SQLite by default, and
+database-agnostic — see `app/db.py`.
 
 ## Run it
 
@@ -19,7 +19,20 @@ Then open http://localhost:8000/docs for interactive API docs, or
 http://localhost:8000/health for a liveness check. CORS is open to the Vite
 dev server at `http://localhost:5173`.
 
-The app seeds a few demo waitlist entries on startup for manual testing.
+The app creates `waitflow.db` (SQLite, gitignored) next to wherever you run
+it from on first startup, and seeds a few demo waitlist entries if the table
+is empty. Data persists across restarts — delete `waitflow.db` to reset.
+
+### Using a different database
+
+Set `DATABASE_URL` to point at any SQLAlchemy-supported database, e.g.:
+
+```bash
+DATABASE_URL=postgresql://user:pass@localhost/waitflow uv run uvicorn app.main:app --reload
+```
+
+No application code needs to change — `app/models.py` and `app/crud.py`
+contain no SQLite-specific SQL.
 
 ## Test
 
@@ -27,15 +40,22 @@ The app seeds a few demo waitlist entries on startup for manual testing.
 uv run pytest
 ```
 
-Tests reset the mock store before each test, so they don't depend on the
-seeded demo data.
+Tests never touch `waitflow.db` — `tests/conftest.py` overrides the DB
+dependency with an isolated in-memory SQLite database, recreated fresh for
+every test. `tests/test_database.py` specifically exercises persistence
+guarantees (data surviving a simulated app restart, notification log rows,
+idempotent seeding) using their own temporary file-backed databases.
 
 ## Structure
 
 - `app/schemas.py` — Pydantic request/response models mirroring `openapi.yaml`.
+- `app/models.py` — SQLAlchemy ORM models (`UTCDateTime` works around SQLite
+  dropping tzinfo on `DateTime(timezone=True)`, so it round-trips as UTC on
+  every dialect).
+- `app/db.py` — engine/session setup; `DATABASE_URL`-driven.
+- `app/crud.py` — the DB access layer; the only module that touches a `Session`.
 - `app/state_machine.py` — status transition validation (docs/spec.md 3.2).
 - `app/sla.py` — SLA breach computation and priority-queue sort order (3.3, 3.4).
-- `app/store.py` — mock in-memory database.
 - `app/errors.py` — `{code, message}` API error shape for 404/409 responses.
 - `app/routers/waitlist.py` — the `/waitlist*` endpoints.
-- `app/main.py` — app wiring, CORS, exception handling, `/health`.
+- `app/main.py` — app wiring, CORS, exception handling, startup DB init/seed, `/health`.

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from app.store import store
+from app import crud
 
 
 def test_health_check(client):
@@ -88,10 +88,12 @@ class TestListEntries:
         body = response.json()
         assert [e["party_name"] for e in body] == ["Okafor"]
 
-    def test_list_filters_by_sla_breached(self, client):
+    def test_list_filters_by_sla_breached(self, client, db_session):
         add_party(client, party_name="NotBreached", quoted_wait_minutes=1000)
         breached = add_party(client, party_name="Breached", quoted_wait_minutes=1).json()
-        store.get_entry(breached["id"]).created_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+        entry = crud.get_entry(db_session, breached["id"])
+        entry.created_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+        db_session.commit()
 
         response = client.get("/waitlist", params={"sla_breached": "false"})
         assert [e["party_name"] for e in response.json()] == ["NotBreached"]
@@ -259,12 +261,13 @@ class TestStats:
         assert body["queue_length_by_priority"]["vip"] == 1
         assert body["queue_length_by_priority"]["standard"] == 0
 
-    def test_stats_counts_sla_breaches(self, client):
+    def test_stats_counts_sla_breaches(self, client, db_session):
         breached = add_party(client, party_name="Breached", quoted_wait_minutes=1).json()
         add_party(client, party_name="NotBreached", quoted_wait_minutes=1000)
 
-        stored = store.get_entry(breached["id"])
-        stored.created_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+        entry = crud.get_entry(db_session, breached["id"])
+        entry.created_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+        db_session.commit()
 
         response = client.get("/waitlist/stats")
         body = response.json()
