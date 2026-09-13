@@ -8,11 +8,15 @@ domain model). Currently backed by an in-memory mock store — see
 ## Run it
 
 ```bash
-uv run uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Then open http://127.0.0.1:8000/docs for interactive API docs, or
-http://127.0.0.1:8000/health for a liveness check. CORS is open to the Vite
+`--host 0.0.0.0` is needed for the port to be reachable through devcontainer/
+Codespaces port forwarding — plain `127.0.0.1` only accepts connections from
+inside the container.
+
+Then open http://localhost:8000/docs for interactive API docs, or
+http://localhost:8000/health for a liveness check. CORS is open to the Vite
 dev server at `http://localhost:5173`.
 
 The app seeds a few demo waitlist entries on startup for manual testing.

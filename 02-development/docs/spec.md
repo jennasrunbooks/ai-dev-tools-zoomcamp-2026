@@ -154,7 +154,9 @@ backend/
 ### 5.2 Dev Workflow
 
 - `uv init`, `uv add fastapi sqlalchemy uvicorn pytest httpx`
-- `uv run uvicorn app.main:app --reload` for local dev
+- `uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` for local
+  dev (`--host 0.0.0.0` so the port is reachable through devcontainer/
+  Codespaces port forwarding)
 - `uv run pytest` for test suite
 - Database engine configured to be swappable (SQLite for dev/test, Postgres-ready via SQLAlchemy dialect) — no SQLite-specific SQL in app code.
 
