@@ -170,6 +170,54 @@ AI coding agents (Claude Code) are used to generate models/endpoints/fixtures ag
 
 ---
 
+### 5.4 Backend Requirements Derived From Frontend Review
+
+The frontend's mock service layer (`src/frontend/src/api/waitlistApi.ts`) and
+supporting utils (`utils/statusMachine.ts`, `utils/sla.ts`) already encode a
+working reference implementation of the contract. The real backend must be a
+drop-in replacement — the frontend swaps its mock client for an HTTP client
+with no other changes. That reference implementation fixes the following
+details the OpenAPI shape alone doesn't fully pin down:
+
+- **Error shape:** every non-2xx `waitlist/*` response the frontend expects
+  to distinguish (404, 409) must return `{ "code": string, "message": string }`
+  (mirrors the frontend's `ApiError` type / `ApiRequestError` class), not
+  FastAPI's default `{"detail": ...}`. `422` validation errors keep FastAPI's
+  default field-level detail — the frontend doesn't parse those.
+- **Status transition body:** `PATCH /waitlist/{id}/status` takes
+  `{ "status": <Status> }`, matching `waitlistApi.transitionStatus(id, to)`.
+- **`sla_breached` is server-computed on every read** (`GET /waitlist`,
+  `GET /waitlist/{id}`, and the entry returned by every mutation) — the
+  frontend never computes it itself once a real backend is wired in, only in
+  the mock. Breach rule: status is `waiting` or `notified` **and**
+  `now - created_at > quoted_wait_minutes`.
+- **Default list ordering:** `GET /waitlist` (with or without filters) is
+  pre-sorted per `compareByQueueOrder`: active entries (`waiting`/`notified`)
+  first, by priority rank (`vip` > `reservation_overflow` > `standard`) then
+  `created_at` ascending; closed entries (`seated`/`cancelled`/`no_show`) sink
+  below, most-recently-closed first. The frontend does not re-sort what it
+  receives.
+- **Stats scope:** `GET /waitlist/stats` aggregates only entries currently
+  `waiting` or `notified` ("active") — matches `getStats()`'s `active` filter.
+  `avg_wait_minutes` is `now - created_at` averaged across active entries,
+  rounded to the nearest minute.
+- **Mutation responses return the full updated entry view** (not just a
+  status code), so `useWaitlist`'s optimistic-refresh pattern keeps working
+  unchanged. `DELETE` is the only endpoint with no body (`204`).
+- **CORS:** the backend must allow the Vite dev origin
+  (`http://localhost:5173`) for local development, since frontend and backend
+  run as separate dev servers.
+- **Mock database:** an in-memory store (list/dict, process-lifetime only) is
+  sufficient for this phase, per homework instructions — no persistence
+  required yet. Keep the storage layer behind a narrow interface (per
+  `5.1`'s `crud.py`) so it can be swapped for SQLAlchemy/SQLite later without
+  touching route handlers. Every stored row carries `restaurant_id`
+  (default `"default"`, per `9.1`) even though it's not yet exposed in
+  response schemas.
+- **Notification simulation:** transitioning to `notified` logs a simulated
+  notification (structured log line) per `9.2`; no request/response shape
+  changes as a result — this is a side effect, not part of the contract.
+
 ## 6. Frontend (React + Node.js)
 
 ### 6.1 Structure (proposed)
