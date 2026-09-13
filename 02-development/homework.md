@@ -43,7 +43,7 @@ Use a mock database, we will replace it with a real one later.
 Write tests for the endpoints first, then implement them.
 Which command do you use to start the backend?
 
-> 💡 **Answer:**
+> 💡 **Answer:** `cd 02-development/src/backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
 
 ## Question 6: Connect frontend and backend
 

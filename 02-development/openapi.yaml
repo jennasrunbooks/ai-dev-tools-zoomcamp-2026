@@ -1,5 +1,365 @@
-Read the frontend's API client in frontend/
+openapi: 3.0.3
+info:
+  title: WaitFlow API
+  description: >-
+    Restaurant waitlist manager backend. Single source of truth for the
+    contract shared between the WaitFlow React frontend and FastAPI backend.
+    See docs/spec.md for the full domain model and design rationale.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8000
+    description: Local development
 
-Create openapi.yaml at the repository root.
+tags:
+  - name: health
+  - name: waitlist
 
-Specify the backend this frontend expects: every endpoint, method, path, request body, response body, and which endpoints need authentication.
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /waitlist:
+    get:
+      operationId: listWaitlistEntries
+      tags: [waitlist]
+      summary: List waitlist entries (queue-ordered, filterable)
+      security: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Status"
+        - name: priority
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Priority"
+        - name: sla_breached
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: >-
+            Entries ordered per the priority-queue rules (docs/spec.md 3.3):
+            active entries (waiting/notified) sorted by priority rank then
+            created_at ascending; closed entries (seated/cancelled/no_show)
+            sink below, most-recently-closed first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WaitlistEntryView"
+    post:
+      operationId: addWaitlistEntry
+      tags: [waitlist]
+      summary: Add a new party to the waitlist
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewWaitlistEntryInput"
+      responses:
+        "201":
+          description: Entry created (status starts as `waiting`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntryView"
+        "422":
+          description: Validation error (FastAPI default field-level detail)
+
+  /waitlist/stats:
+    get:
+      operationId: getWaitlistStats
+      tags: [waitlist]
+      summary: Aggregate stats for entries currently active in the queue
+      security: []
+      responses:
+        "200":
+          description: Queue length, avg wait, SLA breach count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistStats"
+
+  /waitlist/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getWaitlistEntry
+      tags: [waitlist]
+      summary: Get a single entry
+      security: []
+      responses:
+        "200":
+          description: The entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntryView"
+        "404":
+          description: No entry with that id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: updateWaitlistEntry
+      tags: [waitlist]
+      summary: Update editable fields (party_size, notes, quoted_wait_minutes)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWaitlistEntryInput"
+      responses:
+        "200":
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntryView"
+        "404":
+          description: No entry with that id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Validation error (FastAPI default field-level detail)
+    delete:
+      operationId: deleteWaitlistEntry
+      tags: [waitlist]
+      summary: Remove an entry (admin/cleanup)
+      security: []
+      responses:
+        "204":
+          description: Entry deleted
+        "404":
+          description: No entry with that id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /waitlist/{id}/status:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: transitionWaitlistEntryStatus
+      tags: [waitlist]
+      summary: Transition an entry's status (validated against the state machine)
+      description: >-
+        Allowed transitions (docs/spec.md 3.2): waiting -> notified, waiting ->
+        seated, waiting -> cancelled, notified -> seated, notified -> no_show,
+        notified -> waiting. Any transition out of a terminal state (seated,
+        cancelled, no_show) is rejected. Transitioning to `notified` triggers a
+        simulated notification log entry (docs/spec.md 9.2) — no real
+        SMS/push provider is called.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusTransitionInput"
+      responses:
+        "200":
+          description: Transitioned entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntryView"
+        "404":
+          description: No entry with that id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Transition not allowed from the entry's current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+components:
+  schemas:
+    Priority:
+      type: string
+      enum: [vip, reservation_overflow, standard]
+
+    Status:
+      type: string
+      enum: [waiting, notified, seated, cancelled, no_show]
+
+    WaitlistEntry:
+      type: object
+      required:
+        - id
+        - party_name
+        - party_size
+        - phone_number
+        - priority
+        - status
+        - quoted_wait_minutes
+        - created_at
+        - notified_at
+        - seated_at
+        - cancelled_at
+        - notes
+      properties:
+        id:
+          type: string
+        party_name:
+          type: string
+        party_size:
+          type: integer
+          minimum: 1
+        phone_number:
+          type: string
+          nullable: true
+        priority:
+          $ref: "#/components/schemas/Priority"
+        status:
+          $ref: "#/components/schemas/Status"
+        quoted_wait_minutes:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        notified_at:
+          type: string
+          format: date-time
+          nullable: true
+        seated_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    WaitlistEntryView:
+      description: WaitlistEntry plus the server-computed SLA breach flag.
+      allOf:
+        - $ref: "#/components/schemas/WaitlistEntry"
+        - type: object
+          required: [sla_breached]
+          properties:
+            sla_breached:
+              type: boolean
+
+    NewWaitlistEntryInput:
+      type: object
+      required:
+        - party_name
+        - party_size
+        - priority
+        - quoted_wait_minutes
+      properties:
+        party_name:
+          type: string
+          minLength: 1
+        party_size:
+          type: integer
+          minimum: 1
+        phone_number:
+          type: string
+        priority:
+          $ref: "#/components/schemas/Priority"
+        quoted_wait_minutes:
+          type: integer
+          minimum: 1
+        notes:
+          type: string
+
+    UpdateWaitlistEntryInput:
+      type: object
+      properties:
+        party_size:
+          type: integer
+          minimum: 1
+        quoted_wait_minutes:
+          type: integer
+          minimum: 1
+        notes:
+          type: string
+
+    StatusTransitionInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/Status"
+
+    WaitlistStats:
+      type: object
+      required:
+        - queue_length
+        - queue_length_by_priority
+        - avg_wait_minutes
+        - sla_breach_count
+      properties:
+        queue_length:
+          type: integer
+        queue_length_by_priority:
+          type: object
+          required: [vip, reservation_overflow, standard]
+          properties:
+            vip:
+              type: integer
+            reservation_overflow:
+              type: integer
+            standard:
+              type: integer
+        avg_wait_minutes:
+          type: integer
+        sla_breach_count:
+          type: integer
+
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
