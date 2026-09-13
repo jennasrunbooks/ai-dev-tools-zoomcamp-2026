@@ -53,7 +53,7 @@ You can verify that the connection works manually, but you can also ask your age
 
 Which URL does the frontend use to talk to the backend?
 
-> 💡 **Answer:**
+> 💡 **Answer:** `http://localhost:8000` (the `VITE_API_BASE_URL` default baked into `src/api/httpWaitlistApi.ts`)
 
 ## Question 7: Database
 
