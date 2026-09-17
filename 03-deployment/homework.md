@@ -1,0 +1,79 @@
+## Question 1: Understand the project
+
+Fork the Agent Relay starter repository from [here](https://github.com/alexeygrigorev/agent-relay).
+
+Ask your agent to run the project. Try to understand it and experiment with it.
+
+Which description matches the project's architecture?
+
+> 💡 **Answer:** 
+> - [x] Agents claim tasks from a DB through an HTTP API.
+
+## Question 2: Register agents and test the task flow
+
+Ask your coding agent to read `SPEC.md` (in the starter repo root) and try its first acceptance scenario with your local Agent Relay:
+
+Register two agents and have them exchange a task and its result.
+
+Check the result in the dashboard. Then ask your coding agent to turn this flow into an API integration test against the real API and DB. Run the test and confirm it passes.
+
+Which task status does the sender see after the recipient submits its result?
+
+> 💡 **Answer:**
+> - [x] `completed`
+
+## Question 3: Containerization
+
+Ask your coding agent to create a Dockerfile for Agent Relay. Build the image as `agent-relay:local` and run it with the API port published to your machine.
+
+Tip: run uvicorn with `--host 0.0.0.0` inside the container, otherwise `-p` looks broken (uvicorn defaults to `127.0.0.1`).
+
+Open the dashboard and repeat the task flow from Question 2 against the containerized API.
+
+Which Docker option publishes a container's port to your machine?
+
+> 💡 **Answer:**
+> - [x] `-p`
+
+## Question 4: Docker Compose and PostgreSQL
+
+Ask your coding agent to replace SQLite with PostgreSQL and create a `compose.yaml` that runs Agent Relay and PostgreSQL together. Name the database service `postgres`.
+
+Start the stack:
+
+```bash
+docker compose up --build
+```
+
+Run the integration test from Question 2 against the Compose stack and check the result in the dashboard. Confirm that the app stores its data in PostgreSQL.
+
+Which hostname should the API use to connect to the `postgres` service in Docker Compose?
+
+> 💡 **Answer:**
+> - [x] `postgres`
+
+## Question 5: Deploy to Kubernetes
+
+Ask your coding agent to install [kind](https://kind.sigs.k8s.io/) and kubectl if needed, then create a local Kubernetes cluster.
+
+Create manifests in `k8s/` for Agent Relay and PostgreSQL, including Services, persistent DB storage, and readiness checks. Load your Docker image into kind and deploy the application.
+
+Check that the pods are ready. Open the dashboard through port forwarding and verify the task flow from Question 2.
+
+Which Kubernetes resource keeps the requested number of application replicas running and manages updates?
+
+> 💡 **Answer:**
+> - [x] Deployment
+
+## Question 6: CI/CD
+
+Ask your coding agent to create `.github/workflows/ci.yml` that runs the starter's tests and your integration test against PostgreSQL, builds a new Docker image, and deploys it to your kind cluster only if the tests pass.
+
+Run the workflow locally with [act](https://nektosact.com/). Ask your agent to configure access to Docker and the kind cluster, including loading the new image into kind. Use a unique image tag for each version and wait for the rollout to finish.
+
+Change the dashboard heading to `Agent Relay v2` and run the workflow again. Verify that the tests pass and the new heading appears in the deployed dashboard.
+
+What should happen if a test fails in this workflow?
+
+> 💡 **Answer:**
+> - [x] Keep the existing version running and stop the deployment.

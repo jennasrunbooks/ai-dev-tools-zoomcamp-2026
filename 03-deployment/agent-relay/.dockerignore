@@ -1,0 +1,11 @@
+.venv
+.git
+__pycache__/
+.pytest_cache/
+*.db
+*.db-shm
+*.db-wal
+*-credentials.json
+.ruff_cache/
+test_agent_relay.py
+test_integration_live.py
