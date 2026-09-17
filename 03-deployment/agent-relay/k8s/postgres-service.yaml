@@ -1,0 +1,13 @@
+# Named "postgres" so it resolves the same way as compose.yaml's service DNS.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

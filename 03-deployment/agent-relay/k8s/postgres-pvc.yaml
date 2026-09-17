@@ -1,0 +1,11 @@
+# No storageClassName: kind provisions its default "standard" (local-path) class.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
