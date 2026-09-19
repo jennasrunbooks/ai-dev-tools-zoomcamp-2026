@@ -43,33 +43,46 @@ cluster your shell sees) and a kubeconfig that resolves inside act's job
 containers. Everything below runs on your host — nothing here runs from
 this dev container.
 
-1. **Mount the host's Docker socket and join kind's network:**
+**Don't pass a custom `--network`.** An earlier version of this doc used
+`--network kind` so job containers could resolve the kind control-plane
+container by name. That breaks the `test` job: act normally makes service
+containers (Postgres here) reachable at `localhost` by sharing a network
+namespace between the job and its services, and a custom `--network`
+overrides that, leaving `localhost:5432` unreachable
+(`connection refused`). Use `host.docker.internal` instead, which Docker
+Desktop resolves from inside any container regardless of which network it's
+on, and leave the default networking alone so Postgres keeps working at
+`localhost`.
+
+1. **Mount the host's Docker socket** so `docker build`/`kind load` act on
+   the same kind cluster your shell sees:
 
    ```bash
    act workflow_dispatch \
-     --container-daemon-socket /var/run/docker.sock \
-     --network kind
+     --container-daemon-socket /var/run/docker.sock
    ```
 
-   `--network kind` puts act's job containers on the docker network kind
-   created for its nodes, so they can resolve the control-plane container by
-   name instead of only `127.0.0.1`.
-
-2. **Give the job container a kubeconfig valid on that network** — the
-   default `~/.kube/config` kind writes points at `127.0.0.1`, which only
-   resolves from the host, not from another container. Generate the
-   internal-address version once per cluster session and mount it in:
+2. **Point a kubeconfig at the host instead of `127.0.0.1`** — the default
+   `~/.kube/config` kind writes points at `127.0.0.1`, which only resolves
+   from the host itself, not from inside another container:
 
    ```bash
-   kind get kubeconfig --name agent-relay --internal > /tmp/kind-kubeconfig-internal.yaml
-
-   act workflow_dispatch \
-     --container-daemon-socket /var/run/docker.sock \
-     --network kind \
-     --container-options "-v /tmp/kind-kubeconfig-internal.yaml:/root/.kube/config"
+   kind get kubeconfig --name agent-relay > /tmp/kind-kubeconfig-host.yaml
+   sed -i '' 's/127.0.0.1/host.docker.internal/' /tmp/kind-kubeconfig-host.yaml
    ```
 
-3. Stop `docker compose` first if it's still running — it holds host port
+   (drop the `''` after `-i` if you're on Linux/GNU sed instead of macOS)
+
+3. **Run it, mounting that kubeconfig in:**
+
+   ```bash
+   act workflow_dispatch \
+     -P ubuntu-latest=catthehacker/ubuntu:act-latest \
+     --container-daemon-socket /var/run/docker.sock \
+     --container-options "-v /tmp/kind-kubeconfig-host.yaml:/root/.kube/config"
+   ```
+
+4. Stop `docker compose` first if it's still running — it holds host port
    8000, which the deployed dashboard also wants once you port-forward to
    it.
 
