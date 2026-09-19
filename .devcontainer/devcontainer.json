@@ -17,7 +17,8 @@
     "source=claude-code-config-${devcontainerId},target=/home/vscode/.claude,type=volume"
   ],
   "containerEnv": {
-    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
+    "DISABLE_AUTOUPDATER": "1"
   },
   "remoteEnv": {
     "GH_TOKEN": "${localEnv:GH_TOKEN}",
