@@ -23,16 +23,22 @@ If `test` fails, GitHub Actions' `needs:` dependency skips `build` and
 `deploy` automatically — the currently deployed version is left running
 untouched, which is the required fail-closed behavior for Q6.
 
-`deploy` installs `kubectl` via `azure/setup-kubectl` and the `kind` CLI via
-`helm/kind-action` with `install_only: true`. That input matters: without
-it, `helm/kind-action` runs `kind create cluster` and would spin up a brand
-new cluster every invocation instead of reusing the persistent `agent-relay`
-cluster from Q5 (its default use case is an ephemeral cluster for chart
-testing, not deploying onto one that already exists).
+`deploy` installs `kubectl` via `azure/setup-kubectl` and loads the image by
+piping `docker save` straight into `ctr -n k8s.io images import` on the
+`agent-relay-control-plane` node container, rather than calling
+`kind load docker-image`. That command's own image-export logic inspects
+the local containerd config to decide how to read the image, and on some
+container runtimes (observed on OrbStack) it fails with `unknown containerd
+config version: 4 (supported versions: 2 and 3)` — a version-detection gap
+in `kind`, unrelated to the workflow or the image being loaded. `ctr images
+import` is the same underlying operation `kind load docker-image` performs
+on the node, without that fragile detection step, and it also means `deploy`
+never needs the `kind` CLI installed at all — only `docker` and `kubectl`,
+against the cluster you already created for Q5.
 
 Trigger is `workflow_dispatch` only — no `push`/`pull_request`. `deploy`
 targets a kind cluster that only exists on your machine, so this workflow
-only makes sense run locally via `act`; it would fail at the `kind load`
+only makes sense run locally via `act`; it would fail at the image-load
 step on GitHub's hosted runners, which have no such cluster.
 
 ## Running it locally with `act`

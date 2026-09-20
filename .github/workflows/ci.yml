@@ -100,13 +100,10 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Install kind CLI
-        uses: helm/kind-action@v1
-        with:
-          install_only: true
-
-      - name: Load image into kind
-        run: kind load docker-image "${IMAGE_NAME}:${IMAGE_TAG}" --name "${KIND_CLUSTER}"
+      - name: Load image into kind node containerd
+        run: |
+          docker save "${IMAGE_NAME}:${IMAGE_TAG}" | \
+            docker exec -i "${KIND_CLUSTER}-control-plane" ctr -n k8s.io images import -
 
       - name: Apply manifests
         run: kubectl apply -f k8s/
