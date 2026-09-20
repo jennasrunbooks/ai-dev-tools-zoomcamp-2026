@@ -70,14 +70,25 @@ on, and leave the default networking alone so Postgres keeps working at
 
 2. **Point a kubeconfig at the host instead of `127.0.0.1`** — the default
    `~/.kube/config` kind writes points at `127.0.0.1`, which only resolves
-   from the host itself, not from inside another container:
+   from the host itself, not from inside another container. Rewrite the
+   server address with `kubectl config set-cluster` and mark it
+   `--insecure-skip-tls-verify` in the same call, rather than editing the
+   YAML by hand: kind's server certificate is only valid for
+   `agent-relay-control-plane`/`kubernetes`/`localhost`/etc., not for
+   `host.docker.internal`, so a plain hostname swap fails TLS verification
+   even though the connection itself works fine.
 
    ```bash
    kind get kubeconfig --name agent-relay > /tmp/kind-kubeconfig-host.yaml
-   sed -i '' 's/127.0.0.1/host.docker.internal/' /tmp/kind-kubeconfig-host.yaml
+
+   name=$(kubectl --kubeconfig=/tmp/kind-kubeconfig-host.yaml config view -o jsonpath='{.clusters[0].name}')
+   server=$(kubectl --kubeconfig=/tmp/kind-kubeconfig-host.yaml config view -o jsonpath='{.clusters[0].cluster.server}' | sed 's/127.0.0.1/host.docker.internal/')
+   kubectl --kubeconfig=/tmp/kind-kubeconfig-host.yaml config set-cluster "$name" \
+     --server="$server" --insecure-skip-tls-verify=true
    ```
 
-   (drop the `''` after `-i` if you're on Linux/GNU sed instead of macOS)
+   This is scoped to that one throwaway kubeconfig file for a local kind
+   cluster — not something to do against a real cluster's kubeconfig.
 
 3. **Run it, mounting that kubeconfig in:**
 
