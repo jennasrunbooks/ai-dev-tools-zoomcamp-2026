@@ -197,10 +197,18 @@ collides with the port-forward step later.
 docker compose down
 kind create cluster --name agent-relay
 docker build -t agent-relay:local .        # tag kind will load
-kind load docker-image agent-relay:local --name agent-relay
+docker save agent-relay:local | docker exec -i agent-relay-control-plane ctr -n k8s.io images import -
 kubectl apply -f k8s/
 kubectl get pods -w                        # wait for both 1/1 Running
 ```
+
+Loading via `docker save | ctr images import` rather than `kind load
+docker-image`: that command's own image-export step fails on some container
+runtimes (observed on OrbStack) with `unknown containerd config version: 4
+(supported versions: 2 and 3)` — a version-detection gap in `kind`, unrelated
+to the image itself. `ctr images import` is the same underlying load
+operation without that fragile detection step. See `docs/ci-cd.md` for the
+full writeup (the CI pipeline hits and works around the same issue).
 
 ### Reach the dashboard
 
