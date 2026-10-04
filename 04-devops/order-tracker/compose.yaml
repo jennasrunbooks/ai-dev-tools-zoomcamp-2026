@@ -12,6 +12,8 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
     volumes:
       - orders:/data
+      - ./app:/app/app
+    command: ["uv", "run", "--no-sync", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/app"]
     restart: unless-stopped
     depends_on:
       - otel-collector
@@ -70,6 +72,34 @@ services:
       - prometheus
       - loki
       - tempo
+
+  incident-response:
+    build:
+      context: .
+      dockerfile: incident-response/Dockerfile
+    ports:
+      - "127.0.0.1:${INCIDENT_RESPONSE_PORT:-8001}:8001"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY in .env for the responder's headless agent}
+      LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
+      PROMETHEUS_URL: http://prometheus:9090
+      TARGET_SERVICE_NAME: order-tracker
+      APP_BASE_URL: http://app:8000
+    volumes:
+      - ./app:/workspace/app
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: "no"
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
 
 volumes:
   orders:
