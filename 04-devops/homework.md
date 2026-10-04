@@ -4,7 +4,7 @@ Start Order Tracker with `docker compose up --build -d --wait`, then check `curl
 
 What does the health check return?
 
-> 💡 **Answer:** TODO
+> 💡 **Answer:** `{"status":"ok"}`
 
 ## Question 2: Instrument one endpoint
 
@@ -14,7 +14,7 @@ Rebuild, then look up order `standard-1001` (`curl -i http://localhost:8000/api/
 
 Which HTTP status code does the metric record for this lookup?
 
-> 💡 **Answer:** TODO
+> 💡 **Answer:** `200`
 
 ## Question 3: Build the telemetry pipeline
 

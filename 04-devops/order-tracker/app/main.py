@@ -1,3 +1,4 @@
+import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
@@ -5,9 +6,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+
+from app.telemetry import setup_telemetry
 
 
 DB_PATH = Path(os.getenv("ORDER_DB_PATH", "data/orders.db"))
@@ -78,6 +81,38 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Order Tracker", lifespan=lifespan)
 
+tracer, meter = setup_telemetry()
+request_counter = meter.create_counter(
+    "order_tracker.http.requests",
+    unit="1",
+    description="HTTP requests by route and status code",
+)
+logger = logging.getLogger("order_tracker")
+
+
+@app.middleware("http")
+async def telemetry_middleware(request: Request, call_next):
+    with tracer.start_as_current_span(f"{request.method} {request.url.path}") as span:
+        span.set_attribute("http.method", request.method)
+        try:
+            response = await call_next(request)
+        except Exception:
+            route_path = _route_path(request)
+            span.set_attribute("http.route", route_path)
+            span.set_attribute("http.status_code", 500)
+            request_counter.add(1, {"route": route_path, "http_status_code": 500})
+            raise
+        route_path = _route_path(request)
+        span.set_attribute("http.route", route_path)
+        span.set_attribute("http.status_code", response.status_code)
+        request_counter.add(1, {"route": route_path, "http_status_code": response.status_code})
+        return response
+
+
+def _route_path(request: Request) -> str:
+    route = request.scope.get("route")
+    return route.path if route else request.url.path
+
 
 @app.get("/")
 def index():
@@ -100,11 +135,20 @@ def list_orders():
 
 @app.get("/api/orders/{order_id}")
 def get_order(order_id: str):
-    with connect() as db:
-        row = db.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
-    if row is None:
-        raise HTTPException(404, "Order not found")
-    return order_detail(row)
+    with tracer.start_as_current_span("order_lookup") as span:
+        span.set_attribute("order.id", order_id)
+        with connect() as db:
+            row = db.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
+        found = row is not None
+        span.set_attribute("order.found", found)
+        logger.info(
+            "order lookup %s",
+            "hit" if found else "miss",
+            extra={"order_id": order_id, "order_found": found},
+        )
+        if not found:
+            raise HTTPException(404, "Order not found")
+        return order_detail(row)
 
 
 @app.post("/api/orders", status_code=201)
