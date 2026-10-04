@@ -58,4 +58,4 @@ Wait for the agent to fix the problem, restart the app, and confirm the same req
 
 What was the problem?
 
-> 💡 **Answer:** TODO
+> 💡 **Answer:** `ValueError: day is out of range for month`
