@@ -25,9 +25,10 @@ datasources:
         tags:
           - key: service.name
             value: service_name
-        filterByTraceID: true
         spanStartTimeShift: '-5m'
         spanEndTimeShift: '5m'
+        customQuery: true
+        query: '{${__tags}} | trace_id="${__span.traceId}"'
       tracesToMetrics:
         datasourceUid: prometheus
       serviceMap:
