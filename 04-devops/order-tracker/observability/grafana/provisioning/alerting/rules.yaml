@@ -1,0 +1,50 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: order-tracker-alerts
+    folder: Order Tracker
+    interval: 1m
+    rules:
+      - uid: order-tracker-5xx
+        title: Order Tracker 5xx errors
+        condition: C
+        for: 1m
+        noDataState: OK
+        execErrState: Alerting
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              range: false
+              expr: >-
+                sum by (route) (rate(order_tracker_http_requests_total{http_status_code=~"5.."}[5m]))
+                OR on() vector(0)
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: "__expr__"
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 0
+        annotations:
+          summary: "5xx errors on {{ $labels.route }}"
+          description: >-
+            Order Tracker route {{ $labels.route }} returned 5xx responses in
+            the last 5 minutes.
+          dashboard: "Order Tracker - Request Overview: http://localhost:3000/d/order-tracker-requests"
+        labels:
+          severity: critical

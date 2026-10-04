@@ -24,7 +24,7 @@ Rebuild, look up order `standard-1002`, and find its request metric (and matchin
 
 Which HTTP status code does the metric show?
 
-> 💡 **Answer:** TODO
+> 💡 **Answer:** `404`
 
 ## Question 4: Configure the alert
 
@@ -32,7 +32,7 @@ Ask your agent to add a Grafana alert on the `5xx` metric, including the endpoin
 
 What state does Grafana show?
 
-> 💡 **Answer:** TODO
+> 💡 **Answer:** `Normal`
 
 ## Question 5: Build the automatic responder
 
