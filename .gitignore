@@ -43,6 +43,7 @@ media/
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # IDE & OS
 .DS_Store
