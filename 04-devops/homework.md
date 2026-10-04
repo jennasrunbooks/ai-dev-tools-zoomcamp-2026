@@ -48,7 +48,7 @@ curl -X POST http://localhost:8001/alerts \
 
 What did the agent respond? Include the last line from its answer.
 
-> 💡 **Answer:** TODO
+> 💡 **Answer:** `Test alert — no incident, no root cause, no code changes made.`
 
 ## Question 6: Watch the agent fix the incident
 
