@@ -1,5 +1,9 @@
 # Claude Code
-.claude/*
+# settings.local.json is per-developer (personal permission overrides); the
+# rest of .claude/ (settings.json, agents/, skills/) is shared, version-
+# controlled project config — part of the Module 5 agent extension pack
+# (05-agent-capabilities).
+.claude/settings.local.json
 
 # Python
 __pycache__/
