@@ -12,6 +12,7 @@ My personal workspace, notes, and homework submissions for DataTalksClub's [AI D
 | **02 - Full-Stack AI Development** | FastAPI, SQLAlchemy, SQLite, `uv`, OpenAPI, React, `pytest` | [Code](./02-development/) | [Submission](./02-development/homework.md) |
 | **03 - Containerize and Deploy** | Agent Relay architecture, API integration testing, Dockerfile & `docker run -p`, Docker Compose + PostgreSQL, Kubernetes (`kind`, Deployments, Services, persistent storage, readiness checks, port-forward), CI/CD with GitHub Actions & `act` | [Code](./03-deployment/) | [Submission](./03-deployment/homework.md) |
 | **04 - DevOps and Observability for AI-Built Apps** | OpenTelemetry Instrumentation (Metrics, Logs, Traces), Telemetry Pipeline (Collector → Prometheus, Loki, Tempo), Grafana Dashboard, 5xx Alerting, Headless Agent Responder (Claude Code, sandboxed via cap-drop + read-only container), Incident Evidence, Recovery Verification | [Code](./04-devops/) | [Submission](./04-devops/homework.md) |
+| **05 - Coding Agent Capabilities** | Agent Extension Pack built on WaitFlow (Module 2/3): project instructions, reusable skill, specialized subagent, scoped MCP server, branch-protection hook, custom CI agent for API contract drift | [Code](./05-agent-capabilities/) | No graded homework — [Extension Pack](./05-agent-capabilities/docs/agent-extension-pack.md) |
 
 *For the official course curriculum and comprehensive lecture notes, refer to the main [DataTalksClub AI Dev Tools Zoomcamp Repository](https://github.com/DataTalksClub/ai-dev-tools-zoomcamp).*
 

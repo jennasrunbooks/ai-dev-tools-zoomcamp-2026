@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "waitflow": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "05-agent-capabilities/mcp-server",
+        "python",
+        "server.py"
+      ],
+      "env": {}
+    }
+  }
+}
